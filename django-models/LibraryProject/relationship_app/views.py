@@ -1,9 +1,15 @@
 from django.http import HttpResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import DetailView
 from .models import Library
 from .models import Book
-from django.views.generic.detail import DetailView
+# from django.views.generic.detail import DetailView
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login, logout, authenticate
+from django.urls import reverse_lazy
+from django.views.generic import View
+from django.views.generic.edit import FormView
 
 
 
@@ -25,3 +31,37 @@ def library_detail(request, library_id):
 
     
     return render(request, "relationship_app/library_detail.html", {"library": library})
+
+#User Registration View
+class RegisterView(FormView):
+    template_name = 'relationship_app/register.html'
+    form_class = UserCreationForm
+    success_url = reverse_lazy('login')
+
+    def form_valid(self, form):
+        user = form.save()
+        return super().form_valid(form)
+
+
+#User Login View
+class LoginView(FormView):
+    template_name = 'relationship_app/login.html'
+    form_class = AuthenticationForm
+    success_url = reverse_lazy('list_books')
+
+    def form_valid(self, form):
+        user = authenticate(
+            username=form.cleaned_data['username'],
+            password=form.cleaned_data['password']
+        )
+        if user is not None:
+            login(self.request, user)
+            return super().form_valid(form)
+        else:
+            return self.form_invalid(form)
+        
+#User Logout View
+class LogoutView(View):
+    def get(self, request):
+        logout(request)
+        return redirect('login')
